@@ -1,0 +1,18 @@
+#!/usr/bin/mbsync -ac
+
+SyncState /tmp/oauth-env-test
+
+MaildirStore local
+Path /tmp/oauth-env-test
+
+IMAPStore gmail
+Host imap.gmail.com
+User testuser@gmail.com
+SSLType IMAPS
+SSLVersions TLSv1.1 TLSv1.2
+AuthMechs OAUTHBEARER
+
+Channel gmail
+Master :gmail:
+Slave :local:
+Patterns INBOX
