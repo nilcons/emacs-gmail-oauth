@@ -78,7 +78,51 @@ typedef struct sasl_utils {
   int *(*spare_fptr)(void);
 } sasl_utils_t;
 
-typedef struct sasl_out_params sasl_out_params_t;
+struct iovec;
+typedef struct sasl_out_params {
+    unsigned doneflag;
+
+    const char *user;		/* canonicalized user name */
+    const char *authid;		/* canonicalized authentication id */
+
+    unsigned ulen;		/* length of canonicalized user name */
+    unsigned alen;		/* length of canonicalized authid */
+
+    /* security layer information */
+    unsigned maxoutbuf;         /* Maximum buffer size, which will
+                                   produce buffer no bigger than the
+                                   negotiated SASL maximum buffer size */
+    sasl_ssf_t mech_ssf;   /* Should be set non-zero if negotiation of a
+                            * security layer was *attempted*, even if
+                            * the negotiation failed */
+    void *encode_context;
+    int (*encode)(void *context, const struct iovec *invec, unsigned numiov,
+                  const char **output, unsigned *outputlen);
+    void *decode_context;
+    int (*decode)(void *context, const char *input, unsigned inputlen,
+                  const char **output, unsigned *outputlen);
+
+    /* Pointer to delegated (client's) credentials, if supported by
+       the SASL mechanism */
+    void *client_creds;
+
+    /* for additions which don't require a version upgrade; set to 0 */
+    const void *gss_peer_name;
+    const void *gss_local_name;
+    const char *cbindingname;   /* channel binding name from packet */
+    int (*spare_fptr1)(void);
+    int (*spare_fptr2)(void);
+    unsigned int cbindingdisp;  /* channel binding disposition from client */
+    int spare_int2;
+    int spare_int3;
+    int spare_int4;
+
+    /* set to 0 initially, this allows a plugin with extended parameters
+     * to work with an older framework by updating version as parameters
+     * are added.
+     */
+    int param_version;
+} sasl_out_params_t;
 
 typedef struct sasl_client_params {
   const char *service;

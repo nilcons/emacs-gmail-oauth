@@ -1,5 +1,5 @@
 CC = musl-gcc
-CFLAGS = -Wall -Wextra -Wno-unused-parameter -Werror -fPIC -g -I/usr/include # -DOAUTHENV_DEBUG
+CFLAGS = -Wall -Wextra -Wno-unused-parameter -Werror -fPIC -g -I/usr/include -DOAUTHENV_DEBUG
 
 all: liboauthenv.so
 

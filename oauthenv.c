@@ -1,10 +1,14 @@
 #include <stddef.h>
-#include "sasl.h"
+#include <sasl/sasl.h>
+#include <sasl/saslplug.h>
+/* #include "sasl.h" */
 
 typedef struct File FILE;
 extern int fprintf(FILE*, const char*, ...);
 extern FILE *stderr;
 extern char *getenv(const char*);
+
+#include <stdlib.h>
 
 static int client_mech_new(void *glob_context,
                            sasl_client_params_t *params,
@@ -39,6 +43,32 @@ static int client_mech_step(void *conn_context,
   sasl_getsimple_t *simple_cb;
   void *simple_context;
   int has_authname = SASL_FAIL;
+
+#ifdef OAUTHENV_DEBUG
+  fprintf(stderr, "OAUTH_ENV sasl step! %s %s %s %u\n", serverin, oparams->authid, *clientout, oparams->doneflag);
+#endif
+
+  // In case of OAUTHBEARER, serverin definitely means error, because
+  // the protocol is client-first without server response, and RFC
+  // 7628 says, that a server response is definitely an error.
+  if (serverin) {
+    params->utils->seterror(params->utils->conn, 0, serverin);
+    oparams->doneflag = 1;
+    *clientout = NULL;
+    *clientoutlen = 0;
+    fprintf(stderr, "we failed!\n");
+    return SASL_FAIL;
+  }
+
+  // If we are called a second time (oparams->authid) set, but we
+  // didn't have a serverin, then we successfully authenticated.
+  if (oparams->authid) {
+    oparams->doneflag = 1;
+    fprintf(stderr, "from the inside: %p %p\n", clientout, *clientout);
+    *clientout = NULL;
+    *clientoutlen = 0;
+    return SASL_OK;
+  }
 
 #ifdef OAUTHENV_DEBUG
   if (params->utils->malloc == NULL ||
@@ -132,7 +162,7 @@ static int client_mech_step(void *conn_context,
   *clientout = token;
   *clientoutlen = __builtin_strlen(token);
 
-  return SASL_OK;
+  return SASL_CONTINUE;
 }
 
 static sasl_client_plug_t client_plugins[] =
@@ -167,7 +197,7 @@ int sasl_client_plug_init(const sasl_utils_t *utils,
   *pluglist = client_plugins;
   *plugcount = 1;
 #ifdef OAUTHENV_DEBUG
-  fprintf(stderr, "We are initialized!\n");
+  fprintf(stderr, "OAUTH_ENV initialized!\n");
 #endif
   return SASL_OK;
 }
